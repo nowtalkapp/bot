@@ -1,0 +1,15 @@
+{
+  "name": "spicy-bot",
+  "version": "1.2.0",
+  "description": "Discord bot - /spicy gets random Pinterest images",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "postinstall": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "playwright": "^1.49.0"
+  }
+}
