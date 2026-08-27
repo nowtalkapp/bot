@@ -53,13 +53,14 @@ async function getBrowser() {
 }
 
 async function getPinterestImages(query, limit = 12) {
-  const b = await getBrowser();
-  const page = await b.newPage({
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-    viewport: { width: 1400, height: 900 }
-  });
-
+  let page;
   try {
+    const b = await getBrowser();
+    page = await b.newPage({
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      viewport: { width: 1400, height: 900 }
+    });
+
     const searchUrl = `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}&rs=typed`;
     await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
     await page.waitForTimeout(3500);
@@ -83,7 +84,7 @@ async function getPinterestImages(query, limit = 12) {
     console.error('Pinterest scrape error:', err.message);
     return [];
   } finally {
-    await page.close();
+    if (page) await page.close().catch(() => {});
   }
 }
 
@@ -114,8 +115,8 @@ async function sendPinterestImage(interactionOrMessage, term, titlePrefix, isSla
   } catch (err) {
     console.error(err);
     const msg = 'Something went wrong. Try again.';
-    if (isSlash) await interactionOrMessage.editReply(msg);
-    else await interactionOrMessage.reply(msg);
+    if (isSlash) await interactionOrMessage.editReply(msg).catch(() => {});
+    else await interactionOrMessage.reply(msg).catch(() => {});
   }
 }
 
@@ -143,7 +144,7 @@ client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
   const { commandName } = interaction;
 
-  // /help  (does NOT show ,spicy)
+  // /help
   if (commandName === 'help') {
     const embed = new EmbedBuilder()
       .setTitle('📖 Help — Slash Commands')
@@ -165,7 +166,7 @@ client.on('interactionCreate', async interaction => {
 
   // Pinterest
   if (commandName === 'spicy') {
-    if (!interaction.channel.nsfw) {
+    if (!interaction.channel || !interaction.channel.nsfw) {
       return interaction.reply({ content: '🔒 This command only works in **NSFW channels**.', ephemeral: true });
     }
     const term = SPICY_TERMS[Math.floor(Math.random() * SPICY_TERMS.length)];
@@ -325,7 +326,7 @@ client.on('messageCreate', async message => {
   const args = message.content.slice(PREFIX.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
 
-  // ,help  (shows EVERYTHING including ,spicy)
+  // ,help
   if (command === 'help') {
     const embed = new EmbedBuilder()
       .setTitle('📖 Help — All Commands')
@@ -354,7 +355,7 @@ client.on('messageCreate', async message => {
 
   // ,spicy  (NSFW only)
   if (command === 'spicy') {
-    if (!message.channel.nsfw) {
+    if (!message.channel || !message.channel.nsfw) {
       return message.reply('🔒 This command only works in **NSFW channels**.');
     }
     const term = SPICY_TERMS[Math.floor(Math.random() * SPICY_TERMS.length)];
