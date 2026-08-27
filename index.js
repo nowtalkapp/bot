@@ -17,10 +17,11 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 // ========== SEARCH TERMS ==========
-const SPICY_TERMS = ["boob snap", "thong pic snap", "snap pics", "arch pic snap", "boob pic snap", "boob pics snap"];
+const SPICY_TERMS = ["boob snap", "thong pic snap", "snap pics", "arch pics snap", "boob pic snap", "boob pics snap"];
 const CAR_TERMS = ["japanese anime wrap car", "custom anime wrap car", "car anime wrap", "german car custom", "custom car"];
 const TRUCK_TERMS = ["custom truck", "lifted truck", "truck wrap", "diesel truck", "offroad truck"];
 const LOWRIDER_TERMS = ["lowrider", "lowrider car", "custom lowrider", "lowrider paint job", "hydraulic lowrider"];
+const NSFW_SUBS = ["nip slip", "boobs", "nude", "boobs", "arch pic", "ass pic", "boob pic"];
 
 const EIGHTBALL_ANSWERS = [
   "It is certain.", "It is decidedly so.", "Without a doubt.", "Yes definitely.",
@@ -50,6 +51,40 @@ async function getBrowser() {
     });
   }
   return browser;
+}
+
+async function getRedditNSFW() {
+  const sub = NSFW_SUBS[Math.floor(Math.random() * NSFW_SUBS.length)];
+  const url = `https://www.reddit.com/r/${sub}/hot.json?limit=50`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'DiscordBot/1.0'
+      }
+    });
+    const data = await res.json();
+
+    const posts = data.data.children
+      .map(p => p.data)
+      .filter(p => 
+        !p.over_18 === false && // only NSFW
+        (p.url.endsWith('.jpg') || p.url.endsWith('.png') || p.url.endsWith('.jpeg') || p.url.includes('i.redd.it') || p.url.includes('i.imgur.com'))
+      );
+
+    if (!posts.length) return null;
+
+    const post = posts[Math.floor(Math.random() * posts.length)];
+    return {
+      title: post.title,
+      image: post.url,
+      sub: sub,
+      permalink: `https://reddit.com${post.permalink}`
+    };
+  } catch (err) {
+    console.error('Reddit NSFW error:', err.message);
+    return null;
+  }
 }
 
 async function getPinterestImages(query, limit = 12) {
@@ -198,12 +233,49 @@ client.on('interactionCreate', async interaction => {
 
   // Pinterest
   if (commandName === 'spicy') {
-    if (!interaction.channel || !interaction.channel.nsfw) {
-      return interaction.reply({ content: '🔒 This command only works in **NSFW channels**.', ephemeral: true });
+    // More reliable NSFW check
+    let channel = interaction.channel;
+
+    if (!channel || channel.nsfw === undefined) {
+      try {
+        channel = await interaction.client.channels.fetch(interaction.channelId);
+      } catch (err) {
+        channel = null;
+      }
     }
+
+    if (!channel || !channel.nsfw) {
+      return interaction.reply({ 
+        content: '🔒 This command only works in **NSFW channels**.', 
+        ephemeral: true 
+      });
+    }
+
     const term = SPICY_TERMS[Math.floor(Math.random() * SPICY_TERMS.length)];
     return sendPinterestImage(interaction, term, '🌶️ Spicy', true);
   }
+
+if (command === 'nsfw') {
+  if (!message.channel || !message.channel.nsfw) {
+    return message.reply('🔒 This command only works in **NSFW channels**.');
+  }
+
+  await message.channel.sendTyping();
+
+  const result = await getRedditNSFW();
+  if (!result) {
+    return message.reply('Couldn\'t find an image right now. Try again.');
+  }
+
+  const embed = new EmbedBuilder()
+    .setTitle(result.title.slice(0, 250))
+    .setImage(result.image)
+    .setColor(0xFF0000)
+    .setFooter({ text: `r/${result.sub}` })
+    .setURL(result.permalink);
+
+  return message.reply({ embeds: [embed] });
+}
 
   if (commandName === 'cars') {
     const term = CAR_TERMS[Math.floor(Math.random() * CAR_TERMS.length)];
@@ -387,9 +459,21 @@ client.on('messageCreate', async message => {
 
   // ,spicy  (NSFW only)
   if (command === 'spicy') {
-    if (!message.channel || !message.channel.nsfw) {
+    // More reliable NSFW check
+    let channel = message.channel;
+
+    if (!channel || channel.nsfw === undefined) {
+      try {
+        channel = await message.client.channels.fetch(message.channelId);
+      } catch (err) {
+        channel = null;
+      }
+    }
+
+    if (!channel || !channel.nsfw) {
       return message.reply('🔒 This command only works in **NSFW channels**.');
     }
+
     const term = SPICY_TERMS[Math.floor(Math.random() * SPICY_TERMS.length)];
     return sendPinterestImage(message, term, '🌶️ Spicy', false);
   }
