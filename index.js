@@ -17,7 +17,7 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 // ========== SEARCH TERMS ==========
-const SPICY_TERMS = ["boob snap", "thong pic snap", "snap pics", "arch pics snap", "boob pic snap", "butt snap"];
+const SPICY_TERMS = ["boob snap", "thong pic snap", "snap pics", "arch pic snap", "boob pic snap", "boob pics snap"];
 const CAR_TERMS = ["japanese anime wrap car", "custom anime wrap car", "car anime wrap", "german car custom", "custom car"];
 const TRUCK_TERMS = ["custom truck", "lifted truck", "truck wrap", "diesel truck", "offroad truck"];
 const LOWRIDER_TERMS = ["lowrider", "lowrider car", "custom lowrider", "lowrider paint job", "hydraulic lowrider"];
