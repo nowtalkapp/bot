@@ -62,23 +62,55 @@ async function getPinterestImages(query, limit = 12) {
     });
 
     const searchUrl = `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}&rs=typed`;
-    await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
-    await page.waitForTimeout(3500);
-    await page.evaluate(() => window.scrollBy(0, 2000));
-    await page.waitForTimeout(2000);
+    await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForTimeout(4000);
+    await page.evaluate(() => window.scrollBy(0, 2500));
+    await page.waitForTimeout(2500);
 
     const urls = await page.evaluate(() => {
       const imgs = Array.from(document.querySelectorAll('img'));
       const results = [];
+
       for (const img of imgs) {
-        let src = img.src || img.getAttribute('srcset')?.split(' ')[0] || '';
+        let src = img.src || '';
+
+        // Prefer the largest version from srcset
+        const srcset = img.getAttribute('srcset');
+        if (srcset) {
+          const candidates = srcset.split(',')
+            .map(s => s.trim().split(' ')[0])
+            .filter(u => u.includes('pinimg.com'));
+          if (candidates.length) {
+            src = candidates[candidates.length - 1]; // last one is usually the biggest
+          }
+        }
+
         if (!src.includes('pinimg.com')) continue;
-        if (src.includes('/236x/')) src = src.replace('/236x/', '/736x/');
-        if (src.includes('/474x/')) src = src.replace('/474x/', '/736x/');
-        if (src.includes('pinimg.com') && !results.includes(src)) results.push(src);
+        if (src.includes('avatar') || src.includes('profile') || src.includes('user') || src.includes('75x75') || src.includes('60x60')) continue;
+
+        // Force highest quality
+        src = src
+          .replace('/236x/', '/originals/')
+          .replace('/474x/', '/originals/')
+          .replace('/564x/', '/originals/')
+          .replace('/736x/', '/originals/')
+          .replace('/1200x/', '/originals/');
+
+        // Clean query params
+        src = src.split('?')[0];
+
+        if (
+          (src.includes('/originals/') || src.includes('/736x/')) &&
+          !results.includes(src)
+        ) {
+          results.push(src);
+        }
       }
+
       return results;
     });
+
+    console.log(`Found ${urls.length} images for "${query}"`);
     return urls.slice(0, limit);
   } catch (err) {
     console.error('Pinterest scrape error:', err.message);
