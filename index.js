@@ -97,12 +97,127 @@ const EIGHTBALL_ANSWERS = [
   'Very doubtful.'
 ];
 
+const JOKES = [
+  "Why don't scientists trust atoms? Because they make up everything.",
+  "I'm reading a book about anti-gravity. It's impossible to put down.",
+  "Why did the scarecrow win an award? Because he was outstanding in his field.",
+  "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+  "Why don't eggs tell jokes? They'd crack each other up.",
+  "What's the best thing about Switzerland? I don't know, but the flag is a big plus.",
+  "I used to hate facial hair, but then it grew on me.",
+  "Why did the bicycle fall over? Because it was two-tired.",
+  "I'm on a seafood diet. I see food and I eat it.",
+  "What do you call a fake noodle? An impasta."
+];
+
+const QUOTES = [
+  "The only way to do great work is to love what you do. — Steve Jobs",
+  "In the middle of difficulty lies opportunity. — Albert Einstein",
+  "Be yourself; everyone else is already taken. — Oscar Wilde",
+  "The best revenge is massive success. — Frank Sinatra",
+  "Life is what happens when you're busy making other plans. — John Lennon",
+  "Stay hungry, stay foolish. — Steve Jobs",
+  "You miss 100% of the shots you don't take. — Wayne Gretzky",
+  "Whether you think you can or you think you can't, you're right. — Henry Ford",
+  "The future belongs to those who believe in the beauty of their dreams. — Eleanor Roosevelt",
+  "It always seems impossible until it's done. — Nelson Mandela"
+];
+
+const FACTS = [
+  "Honey never spoils. Archaeologists have found 3000-year-old honey that's still edible.",
+  "Octopuses have three hearts and blue blood.",
+  "Bananas are berries, but strawberries aren't.",
+  "A day on Venus is longer than a year on Venus.",
+  "Sharks are older than trees.",
+  "There are more stars in the universe than grains of sand on Earth.",
+  "Wombat poop is cube-shaped.",
+  "The shortest war in history lasted 38 minutes.",
+  "A group of flamingos is called a flamboyance.",
+  "Your stomach gets a new lining every 3-4 days so it doesn't digest itself."
+];
+
+const ROASTS = [
+  "You're the reason the gene pool needs a lifeguard.",
+  "If I wanted to hear from an idiot, I'd watch the news.",
+  "You're like a cloud. When you disappear, it's a beautiful day.",
+  "I'd agree with you, but then we'd both be wrong.",
+  "You're proof that evolution can go in reverse.",
+  "Somewhere out there is a tree working hard to replace the oxygen you waste.",
+  "You're not stupid; you just have bad luck thinking.",
+  "I'd explain it to you, but I left my crayons at home.",
+  "You bring everyone so much joy... when you leave the room.",
+  "You're the human equivalent of a participation trophy."
+];
+
+const COMPLIMENTS = [
+  "You're like a human sunshine — you brighten every room.",
+  "Your vibe is elite. Never change.",
+  "You're smarter than you give yourself credit for.",
+  "People are lucky to know you.",
+  "You have great energy. It's contagious in the best way.",
+  "You're one of the real ones.",
+  "Your smile could power a small city.",
+  "You're cooler than the other side of the pillow.",
+  "The world needs more people like you.",
+  "You're doing better than you think."
+];
+
+const WYR_PG16 = [
+  "Would you rather always be 10 minutes late or always be 20 minutes early?",
+  "Would you rather have unlimited battery life on your phone or free high-speed internet everywhere?",
+  "Would you rather be able to talk to animals or speak every human language?",
+  "Would you rather never have to sleep or never have to eat?",
+  "Would you rather always have perfect hair or always have perfect skin?",
+  "Would you rather fight one horse-sized duck or 100 duck-sized horses?",
+  "Would you rather be famous for something embarrassing or never be famous at all?",
+  "Would you rather only be able to whisper or only be able to shout?",
+  "Would you rather have a rewind button or a pause button for your life?",
+  "Would you rather always know when someone is lying or always get away with lying?",
+  "Would you rather live without music or live without movies/TV?",
+  "Would you rather be able to fly or be invisible?",
+  "Would you rather have a personal chef or a personal driver?",
+  "Would you rather never use social media again or never watch YouTube again?",
+  "Would you rather wake up every day at 5 AM or stay up until 3 AM every night?"
+];
+
+const TRUTHS_PG16 = [
+  "What's the most embarrassing thing you've done in public?",
+  "What's a secret talent you have?",
+  "Who was your first crush?",
+  "What's the worst fashion trend you've ever participated in?",
+  "What's something you're weirdly good at?",
+  "What's the biggest lie you've ever told a teacher/parent?",
+  "What's your most irrational fear?",
+  "Have you ever pretended to like a gift you hated?",
+  "What's the dumbest thing you've done because you were bored?",
+  "What's a song you secretly love but would never admit in public?"
+];
+
+const DARES_PG16 = [
+  "Send a random emoji to the 5th person in your DMs.",
+  "Talk in an accent for the next 3 messages.",
+  "Change your status to something ridiculous for 10 minutes.",
+  "Compliment the next person who talks in this chat.",
+  "Do your best impression of another person in the server.",
+  "Type with your elbows for the next message.",
+  "Post a photo of your current view (desk/room/window).",
+  "Make up a short rap about the last thing you ate.",
+  "Speak only in questions for the next 5 minutes.",
+  "Let the group choose your next profile picture for 1 hour (SFW)."
+];
+
+// Snipe + AFK storage
+const snipes = new Map();      // channelId -> { content, author, avatar, timestamp }
+const editSnipes = new Map();  // channelId -> { old, new, author, avatar, timestamp }
+const afkUsers = new Map();    // userId -> { reason, since }
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildPresences
   ]
 });
 
@@ -288,67 +403,99 @@ async function tryRedditPlaywright() {
 }
 
 /**
- * Fallback: Eporner official API (video thumbnails = reliable NSFW images)
- * Docs: https://www.eporner.com/api/v2/
+ * Fallback: DuckDuckGo Images API (vqd + i.js) with Safe Search = Off
+ * Uses the official image endpoint — much more reliable than page scraping.
  */
-async function tryEpornerNSFW(query) {
+async function tryDuckDuckGoNSFW(query) {
   try {
-    const page = Math.floor(Math.random() * 5) + 1; // random page 1-5 for variety
+    const headers = {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      Referer: 'https://duckduckgo.com/'
+    };
+
+    // Step 1: get the vqd token
+    const tokenRes = await fetch(
+      `https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images`,
+      { headers, signal: AbortSignal.timeout(10000) }
+    );
+    const html = await tokenRes.text();
+
+    // Try several known patterns for the vqd token
+    let vqd = null;
+    const patterns = [
+      /vqd=["']([^"']+)["']/,
+      /vqd=([\d-]+)/,
+      /name=["']vqd["'][^>]*value=["']([^"']+)["']/,
+      /"vqd":"([^"]+)"/
+    ];
+    for (const re of patterns) {
+      const m = html.match(re);
+      if (m) {
+        vqd = m[1];
+        break;
+      }
+    }
+
+    if (!vqd) {
+      console.error('DuckDuckGo: could not extract vqd token');
+      return null;
+    }
+
+    // Step 2: hit the image results endpoint
+    // p=-1 (or -2) = Safe Search Off
     const params = new URLSearchParams({
-      query: query || 'all',
-      per_page: '30',
-      page: String(page),
-      thumbsize: 'big',       // 640x360
-      order: 'most-popular',  // or 'latest', 'top-rated', etc.
-      gay: '0',
-      lq: '1'
+      l: 'us-en',
+      o: 'json',
+      q: query,
+      vqd: vqd,
+      f: ',,,',
+      p: '-1',       // Safe Search Off
+      v7exp: 'a'
     });
 
-    const url = `https://www.eporner.com/api/v2/video/search/?${params.toString()}`;
-    const res = await fetch(url, {
+    const imgRes = await fetch(`https://duckduckgo.com/i.js?${params.toString()}`, {
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        Accept: 'application/json'
+        ...headers,
+        Accept: 'application/json, text/javascript, */*; q=0.01',
+        'X-Requested-With': 'XMLHttpRequest'
       },
       signal: AbortSignal.timeout(10000)
     });
 
-    if (!res.ok) {
-      console.error(`Eporner API ${res.status}`);
+    if (!imgRes.ok) {
+      console.error(`DuckDuckGo i.js status ${imgRes.status}`);
       return null;
     }
 
-    const data = await res.json();
-    const videos = data?.videos || [];
-    if (!videos.length) {
-      console.log(`Eporner returned 0 videos for "${query}"`);
+    const data = await imgRes.json();
+    const results = data?.results || [];
+    if (!results.length) {
+      console.log(`DuckDuckGo returned 0 images for "${query}"`);
       return null;
     }
 
-    // Pick a random video that has a usable thumbnail
-    const valid = videos.filter(v => v.default_thumb?.src || v.thumb);
-    if (!valid.length) return null;
+    // Prefer the full-size image URL
+    const urls = results
+      .map(r => r.image || r.thumbnail || r.url)
+      .filter(u => u && u.startsWith('http'));
 
-    const pick = valid[Math.floor(Math.random() * valid.length)];
-    const image =
-      pick.default_thumb?.src ||
-      (pick.thumbs && pick.thumbs[0]?.src) ||
-      pick.thumb ||
-      null;
+    if (!urls.length) return null;
 
-    if (!image) return null;
+    const image = urls[Math.floor(Math.random() * Math.min(urls.length, 30))];
+    console.log(`DuckDuckGo NSFW found ${urls.length} images for "${query}"`);
 
-    console.log(`Eporner NSFW found image for "${query}" → ${pick.title?.slice(0, 60)}`);
     return {
-      title: (pick.title || query).slice(0, 250),
+      title: query,
       image,
-      sub: 'eporner',
-      permalink: pick.url || `https://www.eporner.com/video-${pick.id}/`,
-      source: 'Eporner'
+      sub: 'duckduckgo',
+      permalink: null,
+      source: 'DuckDuckGo Images (SafeSearch Off)'
     };
   } catch (err) {
-    console.error('Eporner NSFW error:', err.message);
+    console.error('DuckDuckGo NSFW error:', err.message);
     return null;
   }
 }
@@ -382,9 +529,9 @@ async function getRedditNSFW() {
   result = await tryRedditPlaywright();
   if (result) return result;
 
-  // 3. Eporner official API (reliable NSFW thumbnails)
-  const epornerTerm = NSFW_SEARCH_TERMS[Math.floor(Math.random() * NSFW_SEARCH_TERMS.length)];
-  result = await tryEpornerNSFW(epornerTerm);
+  // 3. DuckDuckGo Images with Safe Search = Off
+  const ddgTerm = NSFW_SEARCH_TERMS[Math.floor(Math.random() * NSFW_SEARCH_TERMS.length)];
+  result = await tryDuckDuckGoNSFW(ddgTerm);
   if (result) return result;
 
   // 4. Pinterest fallback
@@ -921,6 +1068,28 @@ async function handleEmbedModal(interaction) {
   }
 }
 
+// Snipe listeners
+client.on('messageDelete', message => {
+  if (!message.author || message.author.bot || !message.content) return;
+  snipes.set(message.channel.id, {
+    content: message.content.slice(0, 1000),
+    author: message.author.tag,
+    avatar: message.author.displayAvatarURL(),
+    timestamp: Date.now()
+  });
+});
+
+client.on('messageUpdate', (oldMsg, newMsg) => {
+  if (!oldMsg.author || oldMsg.author.bot || !oldMsg.content || oldMsg.content === newMsg.content) return;
+  editSnipes.set(oldMsg.channel.id, {
+    old: oldMsg.content.slice(0, 500),
+    new: (newMsg.content || '').slice(0, 500),
+    author: oldMsg.author.tag,
+    avatar: oldMsg.author.displayAvatarURL(),
+    timestamp: Date.now()
+  });
+});
+
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
   console.log('Bot ready!');
@@ -1259,7 +1428,254 @@ client.on('interactionCreate', async interaction => {
     for (let i = 0; i < options.length; i++) {
       await msg.react(emojis[i]);
     }
+    return;
   }
+
+  // ========== NEW FUN / UTILITY COMMANDS ==========
+
+  if (commandName === 'meme') {
+    await interaction.deferReply();
+    try {
+      const subs = ['memes', 'dankmemes', 'me_irl', 'wholesomememes'];
+      const sub = subs[Math.floor(Math.random() * subs.length)];
+      const res = await fetch(`https://www.reddit.com/r/${sub}/hot.json?limit=40`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 DiscordBot' },
+        signal: AbortSignal.timeout(8000)
+      });
+      const data = await res.json();
+      const posts = (data?.data?.children || [])
+        .map(p => p.data)
+        .filter(p => p && !p.over_18 && (p.url?.endsWith('.jpg') || p.url?.endsWith('.png') || p.url?.endsWith('.gif') || p.url?.includes('i.redd.it')));
+      if (!posts.length) return interaction.editReply('No memes found, try again.');
+      const post = posts[Math.floor(Math.random() * posts.length)];
+      const embed = new EmbedBuilder()
+        .setTitle(post.title.slice(0, 250))
+        .setImage(post.url)
+        .setURL(`https://reddit.com${post.permalink}`)
+        .setColor(0xff4500)
+        .setFooter({ text: `r/${sub}` });
+      return interaction.editReply({ embeds: [embed] });
+    } catch {
+      return interaction.editReply('Failed to fetch a meme.');
+    }
+  }
+
+  if (commandName === 'joke') {
+    const joke = JOKES[Math.floor(Math.random() * JOKES.length)];
+    return interaction.reply(`😂 ${joke}`);
+  }
+
+  if (commandName === 'quote') {
+    const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+    return interaction.reply(`💬 ${q}`);
+  }
+
+  if (commandName === 'fact') {
+    const f = FACTS[Math.floor(Math.random() * FACTS.length)];
+    return interaction.reply(`🧠 **Fun Fact:** ${f}`);
+  }
+
+  if (commandName === 'ship') {
+    const u1 = interaction.options.getUser('user1') || interaction.user;
+    const u2 = interaction.options.getUser('user2');
+    if (!u2) return interaction.reply({ content: 'Mention two users.', ephemeral: true });
+    const pct = Math.floor(Math.random() * 101);
+    let msg = pct > 80 ? 'Match made in heaven 💕' : pct > 50 ? 'Pretty solid 👀' : pct > 20 ? 'Could work... maybe' : 'Yikes 💀';
+    return interaction.reply(`💖 **${u1.username}** × **${u2.username}** = **${pct}%**\n${msg}`);
+  }
+
+  if (commandName === 'rate') {
+    const user = interaction.options.getUser('user') || interaction.user;
+    const score = (Math.random() * 10).toFixed(1);
+    return interaction.reply(`I'd rate **${user.username}** a **${score}/10**`);
+  }
+
+  if (commandName === 'howgay') {
+    const user = interaction.options.getUser('user') || interaction.user;
+    const pct = Math.floor(Math.random() * 101);
+    return interaction.reply(`**${user.username}** is **${pct}%** gay`);
+  }
+
+  if (commandName === 'howhot') {
+    const user = interaction.options.getUser('user') || interaction.user;
+    const pct = Math.floor(Math.random() * 101);
+    return interaction.reply(`**${user.username}** is **${pct}%** hot`);
+  }
+
+  if (commandName === 'pp') {
+    const user = interaction.options.getUser('user') || interaction.user;
+    const size = Math.floor(Math.random() * 15) + 1;
+    return interaction.reply(`your dih is **${size}%** inches`);
+  }
+
+  if (commandName === 'coinflip') {
+    const result = Math.random() < 0.5 ? 'Heads' : 'Tails';
+    return interaction.reply(`🪙 **${result}**`);
+  }
+
+  if (commandName === 'choose') {
+    const options = interaction.options.getString('options');
+    const parts = options.split('|').map(s => s.trim()).filter(Boolean);
+    if (parts.length < 2) return interaction.reply({ content: 'Give at least 2 options separated by |', ephemeral: true });
+    const pick = parts[Math.floor(Math.random() * parts.length)];
+    return interaction.reply(`🎯 I choose: **${pick}**`);
+  }
+
+  if (commandName === 'avatar') {
+    const user = interaction.options.getUser('user') || interaction.user;
+    const embed = new EmbedBuilder()
+      .setTitle(`${user.username}'s Avatar`)
+      .setImage(user.displayAvatarURL({ size: 1024 }))
+      .setColor(0x5865f2);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'banner') {
+    const user = interaction.options.getUser('user') || interaction.user;
+    const fetched = await client.users.fetch(user.id, { force: true });
+    const banner = fetched.bannerURL({ size: 1024 });
+    if (!banner) return interaction.reply({ content: 'That user has no banner.', ephemeral: true });
+    const embed = new EmbedBuilder()
+      .setTitle(`${user.username}'s Banner`)
+      .setImage(banner)
+      .setColor(0x5865f2);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'snipe') {
+    const data = snipes.get(interaction.channel.id);
+    if (!data) return interaction.reply({ content: 'Nothing to snipe.', ephemeral: true });
+    const embed = new EmbedBuilder()
+      .setAuthor({ name: data.author, iconURL: data.avatar })
+      .setDescription(data.content)
+      .setColor(0xed4245)
+      .setFooter({ text: 'Deleted message' })
+      .setTimestamp(data.timestamp);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'editsnipe') {
+    const data = editSnipes.get(interaction.channel.id);
+    if (!data) return interaction.reply({ content: 'Nothing to editsnipe.', ephemeral: true });
+    const embed = new EmbedBuilder()
+      .setAuthor({ name: data.author, iconURL: data.avatar })
+      .addFields(
+        { name: 'Before', value: data.old || '*empty*' },
+        { name: 'After', value: data.new || '*empty*' }
+      )
+      .setColor(0xfaa61a)
+      .setTimestamp(data.timestamp);
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  if (commandName === 'afk') {
+    const reason = interaction.options.getString('reason') || 'AFK';
+    afkUsers.set(interaction.user.id, { reason, since: Date.now() });
+    return interaction.reply(`😴 You're now AFK: **${reason}**`);
+  }
+
+  if (commandName === 'remind') {
+    const timeStr = interaction.options.getString('time');
+    const text = interaction.options.getString('message');
+    const match = timeStr.match(/^(\d+)(s|m|h|d)$/i);
+    if (!match) return interaction.reply({ content: 'Use format like `10m`, `2h`, `1d`', ephemeral: true });
+    const num = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+    const ms = unit === 's' ? num * 1000 : unit === 'm' ? num * 60000 : unit === 'h' ? num * 3600000 : num * 86400000;
+    if (ms > 86400000 * 7) return interaction.reply({ content: 'Max 7 days.', ephemeral: true });
+    await interaction.reply(`⏰ Reminder set for **${timeStr}**: ${text}`);
+    setTimeout(() => {
+      interaction.followUp({ content: `⏰ **Reminder for ${interaction.user}:** ${text}` }).catch(() => {});
+    }, ms);
+    return;
+  }
+
+  if (commandName === 'weather') {
+    const city = interaction.options.getString('city');
+    await interaction.deferReply();
+    try {
+      const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`, { signal: AbortSignal.timeout(8000) }).then(r => r.json());
+      if (!geo?.results?.[0]) return interaction.editReply('City not found.');
+      const { latitude, longitude, name, country } = geo.results[0];
+      const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`, { signal: AbortSignal.timeout(8000) }).then(r => r.json());
+      const cw = w.current_weather;
+      const embed = new EmbedBuilder()
+        .setTitle(`🌤️ Weather — ${name}, ${country}`)
+        .addFields(
+          { name: 'Temperature', value: `${cw.temperature}°C`, inline: true },
+          { name: 'Wind', value: `${cw.windspeed} km/h`, inline: true },
+          { name: 'Code', value: `${cw.weathercode}`, inline: true }
+        )
+        .setColor(0x3498db);
+      return interaction.editReply({ embeds: [embed] });
+    } catch {
+      return interaction.editReply('Failed to get weather.');
+    }
+  }
+
+  if (commandName === 'define') {
+    const word = interaction.options.getString('word');
+    await interaction.deferReply();
+    try {
+      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) return interaction.editReply('No definition found.');
+      const data = await res.json();
+      const entry = data[0];
+      const meaning = entry.meanings?.[0];
+      const def = meaning?.definitions?.[0]?.definition || 'No definition.';
+      const embed = new EmbedBuilder()
+        .setTitle(`📖 ${entry.word}`)
+        .setDescription(def)
+        .addFields({ name: 'Part of speech', value: meaning?.partOfSpeech || '—', inline: true })
+        .setColor(0x5865f2);
+      if (entry.phonetic) embed.setFooter({ text: entry.phonetic });
+      return interaction.editReply({ embeds: [embed] });
+    } catch {
+      return interaction.editReply('Failed to look up that word.');
+    }
+  }
+
+  if (commandName === 'roast') {
+    const user = interaction.options.getUser('user') || interaction.user;
+    const roast = ROASTS[Math.floor(Math.random() * ROASTS.length)];
+    return interaction.reply(`🔥 ${user}: ${roast}`);
+  }
+
+  if (commandName === 'compliment') {
+    const user = interaction.options.getUser('user') || interaction.user;
+    const c = COMPLIMENTS[Math.floor(Math.random() * COMPLIMENTS.length)];
+    return interaction.reply(`💖 ${user}: ${c}`);
+  }
+
+  if (commandName === 'simp') {
+    const user = interaction.options.getUser('user') || interaction.user;
+    const pct = Math.floor(Math.random() * 101);
+    return interaction.reply(`🥺 **${interaction.user.username}** is **${pct}%** simping for **${user.username}**`);
+  }
+
+  if (commandName === 'wyr') {
+    const q = WYR_PG16[Math.floor(Math.random() * WYR_PG16.length)];
+    const embed = new EmbedBuilder()
+      .setTitle('🤔 Would You Rather')
+      .setDescription(q)
+      .setColor(0x9b59b6)
+      .setFooter({ text: 'PG-16' });
+    const msg = await interaction.reply({ embeds: [embed], fetchReply: true });
+    await msg.react('🅰️');
+    await msg.react('🅱️');
+    return;
+  }
+
+  if (commandName === 'truth') {
+    const t = TRUTHS_PG16[Math.floor(Math.random() * TRUTHS_PG16.length)];
+    return interaction.reply(`🗣️ **Truth:** ${t}`);
+  }
+
+  if (commandName === 'dare') {
+    const d = DARES_PG16[Math.floor(Math.random() * DARES_PG16.length)];
+    return interaction.reply(`😈 **Dare:** ${d}`);
+  }
+
   } catch (err) {
     console.error('Interaction handler error:', err);
     try {
@@ -1277,7 +1693,21 @@ client.on('interactionCreate', async interaction => {
 
 // ===================== PREFIX COMMANDS (,) =====================
 client.on('messageCreate', async message => {
-  if (message.author.bot || !message.content.startsWith(PREFIX)) return;
+  if (message.author.bot) return;
+
+  // AFK return + mention check
+  if (afkUsers.has(message.author.id)) {
+    afkUsers.delete(message.author.id);
+    message.reply(`👋 Welcome back, you're no longer AFK.`).catch(() => {});
+  }
+  for (const [id, data] of afkUsers) {
+    if (message.mentions.users.has(id)) {
+      const mins = Math.floor((Date.now() - data.since) / 60000);
+      message.reply(`😴 **${message.mentions.users.get(id).username}** is AFK: ${data.reason} (${mins}m)`).catch(() => {});
+    }
+  }
+
+  if (!message.content.startsWith(PREFIX)) return;
 
   const args = message.content.slice(PREFIX.length).trim().split(/ +/);
   const command = args.shift()?.toLowerCase();
@@ -1399,6 +1829,223 @@ client.on('messageCreate', async message => {
     return sent.edit(
       `🏓 **Pong!**\nRoundtrip: \`${roundtrip}ms\`\nWebsocket: \`${ws}ms\``
     );
+  }
+
+  // ---- New prefix commands ----
+  if (command === 'meme') {
+    await message.channel.sendTyping().catch(() => {});
+    try {
+      const subs = ['memes', 'dankmemes', 'me_irl', 'wholesomememes'];
+      const sub = subs[Math.floor(Math.random() * subs.length)];
+      const res = await fetch(`https://www.reddit.com/r/${sub}/hot.json?limit=40`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 DiscordBot' },
+        signal: AbortSignal.timeout(8000)
+      });
+      const data = await res.json();
+      const posts = (data?.data?.children || [])
+        .map(p => p.data)
+        .filter(p => p && !p.over_18 && (p.url?.endsWith('.jpg') || p.url?.endsWith('.png') || p.url?.endsWith('.gif') || p.url?.includes('i.redd.it')));
+      if (!posts.length) return message.reply('No memes found.');
+      const post = posts[Math.floor(Math.random() * posts.length)];
+      const embed = new EmbedBuilder()
+        .setTitle(post.title.slice(0, 250))
+        .setImage(post.url)
+        .setURL(`https://reddit.com${post.permalink}`)
+        .setColor(0xff4500)
+        .setFooter({ text: `r/${sub}` });
+      return message.reply({ embeds: [embed] });
+    } catch {
+      return message.reply('Failed to fetch a meme.');
+    }
+  }
+
+  if (command === 'joke') return message.reply(`😂 ${JOKES[Math.floor(Math.random() * JOKES.length)]}`);
+  if (command === 'quote') return message.reply(`💬 ${QUOTES[Math.floor(Math.random() * QUOTES.length)]}`);
+  if (command === 'fact') return message.reply(`🧠 **Fun Fact:** ${FACTS[Math.floor(Math.random() * FACTS.length)]}`);
+
+  if (command === 'ship') {
+    const u1 = message.mentions.users.first();
+    const u2 = message.mentions.users.at(1);
+    if (!u1 || !u2) return message.reply('Mention two users: `,ship @user1 @user2`');
+    const pct = Math.floor(Math.random() * 101);
+    let msg = pct > 80 ? 'Match made in heaven 💕' : pct > 50 ? 'Pretty solid 👀' : pct > 20 ? 'Could work... maybe' : 'Yikes 💀';
+    return message.reply(`💖 **${u1.username}** × **${u2.username}** = **${pct}%**\n${msg}`);
+  }
+
+  if (command === 'rate') {
+    const user = message.mentions.users.first() || message.author;
+    return message.reply(`📊 I'd rate **${user.username}** a **${(Math.random() * 10).toFixed(1)}/10**`);
+  }
+
+  if (command === 'howgay') {
+    const user = message.mentions.users.first() || message.author;
+    return message.reply(`🏳️‍🌈 **${user.username}** is **${Math.floor(Math.random() * 101)}%** gay`);
+  }
+
+  if (command === 'howhot') {
+    const user = message.mentions.users.first() || message.author;
+    return message.reply(`🔥 **${user.username}** is **${Math.floor(Math.random() * 101)}%** hot`);
+  }
+
+  if (command === 'pp') {
+    const user = message.mentions.users.first() || message.author;
+    const size = Math.floor(Math.random() * 15) + 1;
+    return message.reply(`🍆 **${user.username}**'s pp: 8${'='.repeat(size)}D`);
+  }
+
+  if (command === 'coinflip') return message.reply(`🪙 **${Math.random() < 0.5 ? 'Heads' : 'Tails'}**`);
+
+  if (command === 'choose') {
+    const parts = args.join(' ').split('|').map(s => s.trim()).filter(Boolean);
+    if (parts.length < 2) return message.reply('Use: `,choose option1 | option2 | option3`');
+    return message.reply(`🎯 I choose: **${parts[Math.floor(Math.random() * parts.length)]}**`);
+  }
+
+  if (command === 'avatar') {
+    const user = message.mentions.users.first() || message.author;
+    const embed = new EmbedBuilder().setTitle(`${user.username}'s Avatar`).setImage(user.displayAvatarURL({ size: 1024 })).setColor(0x5865f2);
+    return message.reply({ embeds: [embed] });
+  }
+
+  if (command === 'banner') {
+    const user = message.mentions.users.first() || message.author;
+    const fetched = await client.users.fetch(user.id, { force: true });
+    const banner = fetched.bannerURL({ size: 1024 });
+    if (!banner) return message.reply('That user has no banner.');
+    const embed = new EmbedBuilder().setTitle(`${user.username}'s Banner`).setImage(banner).setColor(0x5865f2);
+    return message.reply({ embeds: [embed] });
+  }
+
+  if (command === 'snipe') {
+    const data = snipes.get(message.channel.id);
+    if (!data) return message.reply('Nothing to snipe.');
+    const embed = new EmbedBuilder()
+      .setAuthor({ name: data.author, iconURL: data.avatar })
+      .setDescription(data.content)
+      .setColor(0xed4245)
+      .setTimestamp(data.timestamp);
+    return message.reply({ embeds: [embed] });
+  }
+
+  if (command === 'editsnipe') {
+    const data = editSnipes.get(message.channel.id);
+    if (!data) return message.reply('Nothing to editsnipe.');
+    const embed = new EmbedBuilder()
+      .setAuthor({ name: data.author, iconURL: data.avatar })
+      .addFields({ name: 'Before', value: data.old || '*empty*' }, { name: 'After', value: data.new || '*empty*' })
+      .setColor(0xfaa61a)
+      .setTimestamp(data.timestamp);
+    return message.reply({ embeds: [embed] });
+  }
+
+  if (command === 'afk') {
+    const reason = args.join(' ') || 'AFK';
+    afkUsers.set(message.author.id, { reason, since: Date.now() });
+    return message.reply(`😴 You're now AFK: **${reason}**`);
+  }
+
+  if (command === 'remind') {
+    const timeStr = args[0];
+    const text = args.slice(1).join(' ');
+    if (!timeStr || !text) return message.reply('Use: `,remind 10m do something`');
+    const match = timeStr.match(/^(\d+)(s|m|h|d)$/i);
+    if (!match) return message.reply('Time format: 10s, 5m, 2h, 1d');
+    const num = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+    const ms = unit === 's' ? num * 1000 : unit === 'm' ? num * 60000 : unit === 'h' ? num * 3600000 : num * 86400000;
+    if (ms > 86400000 * 7) return message.reply('Max 7 days.');
+    await message.reply(`⏰ Reminder set for **${timeStr}**: ${text}`);
+    setTimeout(() => {
+      message.channel.send(`⏰ **Reminder for ${message.author}:** ${text}`).catch(() => {});
+    }, ms);
+    return;
+  }
+
+  if (command === 'weather') {
+    const city = args.join(' ');
+    if (!city) return message.reply('Use: `,weather London`');
+    await message.channel.sendTyping().catch(() => {});
+    try {
+      const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`, { signal: AbortSignal.timeout(8000) }).then(r => r.json());
+      if (!geo?.results?.[0]) return message.reply('City not found.');
+      const { latitude, longitude, name, country } = geo.results[0];
+      const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`, { signal: AbortSignal.timeout(8000) }).then(r => r.json());
+      const cw = w.current_weather;
+      const embed = new EmbedBuilder()
+        .setTitle(`🌤️ Weather — ${name}, ${country}`)
+        .addFields(
+          { name: 'Temperature', value: `${cw.temperature}°C`, inline: true },
+          { name: 'Wind', value: `${cw.windspeed} km/h`, inline: true }
+        )
+        .setColor(0x3498db);
+      return message.reply({ embeds: [embed] });
+    } catch {
+      return message.reply('Failed to get weather.');
+    }
+  }
+
+  if (command === 'define') {
+    const word = args[0];
+    if (!word) return message.reply('Use: `,define hello`');
+    await message.channel.sendTyping().catch(() => {});
+    try {
+      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) return message.reply('No definition found.');
+      const data = await res.json();
+      const entry = data[0];
+      const meaning = entry.meanings?.[0];
+      const def = meaning?.definitions?.[0]?.definition || 'No definition.';
+      const embed = new EmbedBuilder()
+        .setTitle(`📖 ${entry.word}`)
+        .setDescription(def)
+        .addFields({ name: 'Part of speech', value: meaning?.partOfSpeech || '—', inline: true })
+        .setColor(0x5865f2);
+      return message.reply({ embeds: [embed] });
+    } catch {
+      return message.reply('Failed to look up that word.');
+    }
+  }
+
+  if (command === 'roast') {
+    const user = message.mentions.users.first() || message.author;
+    return message.reply(`🔥 ${user}: ${ROASTS[Math.floor(Math.random() * ROASTS.length)]}`);
+  }
+
+  if (command === 'compliment') {
+    const user = message.mentions.users.first() || message.author;
+    return message.reply(`💖 ${user}: ${COMPLIMENTS[Math.floor(Math.random() * COMPLIMENTS.length)]}`);
+  }
+
+  if (command === 'simp') {
+    const user = message.mentions.users.first() || message.author;
+    return message.reply(`🥺 **${message.author.username}** is **${Math.floor(Math.random() * 101)}%** simping for **${user.username}**`);
+  }
+
+  if (command === 'wyr') {
+    const q = WYR_PG16[Math.floor(Math.random() * WYR_PG16.length)];
+    const embed = new EmbedBuilder().setTitle('🤔 Would You Rather').setDescription(q).setColor(0x9b59b6).setFooter({ text: 'PG-16' });
+    const msg = await message.reply({ embeds: [embed] });
+    await msg.react('🅰️');
+    await msg.react('🅱️');
+    return;
+  }
+
+  if (command === 'truth') return message.reply(`🗣️ **Truth:** ${TRUTHS_PG16[Math.floor(Math.random() * TRUTHS_PG16.length)]}`);
+  if (command === 'dare') return message.reply(`😈 **Dare:** ${DARES_PG16[Math.floor(Math.random() * DARES_PG16.length)]}`);
+
+  // existing 8ball / roll prefix aliases
+  if (command === '8ball') {
+    const question = args.join(' ');
+    if (!question) return message.reply('Ask a question: `,8ball will I win?`');
+    const answer = EIGHTBALL_ANSWERS[Math.floor(Math.random() * EIGHTBALL_ANSWERS.length)];
+    const embed = new EmbedBuilder().setTitle('🎱 Magic 8-Ball').addFields({ name: 'Question', value: question }, { name: 'Answer', value: answer }).setColor(0x5865f2);
+    return message.reply({ embeds: [embed] });
+  }
+
+  if (command === 'dice' || command === 'roll') {
+    const sides = parseInt(args[0]) || 6;
+    if (sides < 2 || sides > 1000) return message.reply('Sides must be 2–1000.');
+    return message.reply(`🎲 You rolled a **${Math.floor(Math.random() * sides) + 1}** (1–${sides})`);
   }
 });
 
@@ -1529,7 +2176,98 @@ async function registerCommands() {
           required: false
         }
       ]
-    }
+    },
+    { name: 'meme', description: 'Get a random meme' },
+    { name: 'joke', description: 'Get a random joke' },
+    { name: 'quote', description: 'Get a random quote' },
+    { name: 'fact', description: 'Get a random fun fact' },
+    {
+      name: 'ship',
+      description: 'Ship two users',
+      options: [
+        { name: 'user1', description: 'First user', type: 6, required: true },
+        { name: 'user2', description: 'Second user', type: 6, required: true }
+      ]
+    },
+    {
+      name: 'rate',
+      description: 'Rate a user out of 10',
+      options: [{ name: 'user', description: 'User to rate', type: 6, required: false }]
+    },
+    {
+      name: 'howgay',
+      description: 'How gay is someone?',
+      options: [{ name: 'user', description: 'User', type: 6, required: false }]
+    },
+    {
+      name: 'howhot',
+      description: 'How hot is someone?',
+      options: [{ name: 'user', description: 'User', type: 6, required: false }]
+    },
+    {
+      name: 'pp',
+      description: 'The classic pp size command',
+      options: [{ name: 'user', description: 'User', type: 6, required: false }]
+    },
+    { name: 'coinflip', description: 'Flip a coin' },
+    {
+      name: 'choose',
+      description: 'Choose between options (separate with |)',
+      options: [{ name: 'options', description: 'option1 | option2 | option3', type: 3, required: true }]
+    },
+    {
+      name: 'avatar',
+      description: "Show a user's avatar",
+      options: [{ name: 'user', description: 'User', type: 6, required: false }]
+    },
+    {
+      name: 'banner',
+      description: "Show a user's banner",
+      options: [{ name: 'user', description: 'User', type: 6, required: false }]
+    },
+    { name: 'snipe', description: 'Show the last deleted message' },
+    { name: 'editsnipe', description: 'Show the last edited message' },
+    {
+      name: 'afk',
+      description: 'Set yourself as AFK',
+      options: [{ name: 'reason', description: 'AFK reason', type: 3, required: false }]
+    },
+    {
+      name: 'remind',
+      description: 'Set a reminder',
+      options: [
+        { name: 'time', description: 'e.g. 10m, 2h, 1d', type: 3, required: true },
+        { name: 'message', description: 'What to remind you about', type: 3, required: true }
+      ]
+    },
+    {
+      name: 'weather',
+      description: 'Get the weather for a city',
+      options: [{ name: 'city', description: 'City name', type: 3, required: true }]
+    },
+    {
+      name: 'define',
+      description: 'Define a word',
+      options: [{ name: 'word', description: 'Word to define', type: 3, required: true }]
+    },
+    {
+      name: 'roast',
+      description: 'Roast someone',
+      options: [{ name: 'user', description: 'Victim', type: 6, required: false }]
+    },
+    {
+      name: 'compliment',
+      description: 'Compliment someone',
+      options: [{ name: 'user', description: 'User', type: 6, required: false }]
+    },
+    {
+      name: 'simp',
+      description: 'How much are you simping?',
+      options: [{ name: 'user', description: 'Who you simp for', type: 6, required: false }]
+    },
+    { name: 'wyr', description: 'Would You Rather (PG-16)' },
+    { name: 'truth', description: 'Truth question (PG-16)' },
+    { name: 'dare', description: 'Dare challenge (PG-16)' }
   ];
 
   const rest = new REST({ version: '10' }).setToken(TOKEN);
