@@ -6,7 +6,7 @@ const express = require('express');
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const PREFIX = ',';
-
+f
 const app = express();
 app.get('/', (req, res) => {
   res.send('bot is online');
